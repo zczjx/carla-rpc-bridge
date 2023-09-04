@@ -42,6 +42,8 @@ class VehicleProxy(object):
         self.vehicle.set_autopilot(False)
         for actor in self.actor_list:
             actor.destroy()
+    def __del__(self):
+        self.stop()
 
     def camera_dispatch(self, sensor_data, sensor_id):
         metadata = {'name': sensor_id, 'type': 'camera'}

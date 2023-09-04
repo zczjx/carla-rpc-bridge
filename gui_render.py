@@ -28,6 +28,9 @@ class GuiRender(object):
         font = pygame.font.match_font(font)
         return pygame.font.Font(font, 14)
 
+    def set_caption(self, title='GuiRender'):
+        pygame.display.set_caption(title)
+
     def put_render_queue(self, image):
         self.render_queue.put(image)
 
@@ -44,5 +47,9 @@ class GuiRender(object):
 
     def flip_display(self):
         self.clock.tick()
-        self.display.blit(self.font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)), (8, 10))
+        self.display.blit(self.font.render('% 5d FPS (real)' % self.clock.get_fps(), True, (255, 255, 255)), (8, 10))
         pygame.display.flip()
+
+    def __del__(self):
+        pygame.quit()
+        print('Bye pygame.quit!')
