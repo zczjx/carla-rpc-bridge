@@ -35,6 +35,7 @@ class GuiRender(object):
         self.render_queue.put(image)
 
     def get_render_queue(self):
+        self.clock.tick()
         return self.render_queue.get()
 
     def draw_image(self, height, width, image=[]):
@@ -46,7 +47,6 @@ class GuiRender(object):
         self.display.blit(image_surface, (0, 0))
 
     def flip_display(self):
-        self.clock.tick()
         self.display.blit(self.font.render('% 5d FPS (real)' % self.clock.get_fps(), True, (255, 255, 255)), (8, 10))
         pygame.display.flip()
 
