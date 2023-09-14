@@ -22,16 +22,13 @@ def main():
     vehicle_client = VehicleProxy(rig=None, world=world)
 
     vehicle_client.start()
-    while True:
-        vehicle_client.tick_update()
-
-    vehicle_client.stop()
-    print('done.')
-
-if __name__ == '__main__':
-
     try:
-        main()
+        while True:
+            vehicle_client.tick_update()
 
     except KeyboardInterrupt:
-        print('\nCancelled by user. Bye!')
+        print('vehicle_client done.')
+
+
+if __name__ == '__main__':
+        main()
