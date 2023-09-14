@@ -4,6 +4,7 @@ import sys
 import random
 import msgpackrpc
 from gui_render import GuiRender
+from sensor_rpc import cameraRPC, gpsRPC, imuRPC
 import time, threading
 
 try:
@@ -11,57 +12,50 @@ try:
 except ImportError:
     import Queue as queue
 
-class VehicleServer(object):
-    def __init__(self, ip_addr="localhost", port=18800):
-        self.ip_addr = ip_addr
-        self.port = port
+class SensorServer(object):
+    def __init__(self, rig=''):
+        self.init_camera_service()
+        self.init_gps_service()
+        self.init_imu_service()
+
         self.render = None
         self.gui_thread = threading.Thread(target=self.gui_render_flow)
-        self.gui_thread.start()
 
     def __del__(self):
         self.gui_thread.join()
+        self.camera_service.stop()
+        self.camera_service_thread.join()
+        self.gps_service.stop()
+        self.gps_service_thread.join()
+        self.imu_service.stop()
+        self.imu_service_thread.join()
 
-    def gui_render_flow(self):
-        self.render = GuiRender()
-        self.render.set_caption('VehicleServer')
-        while True:
-            metadata, sensor_data = self.render.get_render_queue()
-            self.render.draw_image(height = metadata[b'height'],
-                                   width = metadata[b'width'],
-                                   image = sensor_data)
-            self.render.flip_display()
+    def init_camera_service(self):
+        self.camera_rpc = cameraRPC()
+        self.camera_service = msgpackrpc.Server(self.camera_rpc)
+        self.camera_service.listen(msgpackrpc.Address("localhost", 18800))
+        self.camera_service_thread = threading.Thread(target=self.camera_service.start)
 
-    def push_camera_data(self, metadata, sensor_data):
-        print(metadata)
+    def init_gps_service(self):
+        self.gps_service = msgpackrpc.Server(gpsRPC())
+        self.gps_service.listen(msgpackrpc.Address("localhost", 18801))
+        self.gps_service_thread = threading.Thread(target=self.gps_service.start)
 
-    def push_gps_data(self, metadata, sensor_data):
-        print(metadata)
-        # print(sensor_data)
-        # if(metadata['type'] != 'camera'):
-        #    print(metadata)
-        #    print(sensor_data)
-        # if((self.render != None) and (metadata['type'] == 'camera')):
-        # self.render.put_render_queue(image=(metadata, sensor_data))
+    def init_imu_service(self):
+        self.imu_service = msgpackrpc.Server(imuRPC())
+        self.imu_service.listen(msgpackrpc.Address("localhost", 18802))
+        self.imu_service_thread = threading.Thread(target=self.imu_service.start)
 
-class CameraService(object):
-    def __init__(self, ip_addr="localhost", port=18800):
-        self.ip_addr = ip_addr
-        self.port = port
-        self.render = None
-        self.gui_thread = threading.Thread(target=self.gui_render_flow)
+
+    def start(self):
         self.gui_thread.start()
-
-    def __del__(self):
-        self.gui_thread.join()
-
-    def push_camera_data(self, metadata, sensor_data):
-        if(self.render != None):
-            # print(metadata)
-            self.render.put_render_queue(image=(metadata, sensor_data))
+        self.camera_service_thread.start()
+        self.gps_service_thread.start()
+        self.imu_service_thread.start()
 
     def gui_render_flow(self):
         self.render = GuiRender()
+        self.camera_rpc.set_put_render_callback(put_render_callback=self.render.put_render_queue)
         self.render.set_caption('camera service')
         while True:
             metadata, sensor_data = self.render.get_render_queue()
@@ -70,31 +64,14 @@ class CameraService(object):
                                    image = sensor_data)
             self.render.flip_display()
 
-class GPSService(object):
-    def __init__(self, ip_addr="localhost", port=18801):
-        self.ip_addr = ip_addr
-        self.port = port
-
-    def push_gps_data(self, metadata, sensor_data):
-        print(sensor_data)
-
 def main():
-    camera_service = msgpackrpc.Server(CameraService())
-    camera_service.listen(msgpackrpc.Address("localhost", 18800))
-    gps_service = msgpackrpc.Server(GPSService())
-    gps_service.listen(msgpackrpc.Address("localhost", 18801))
-    camera_service_thread = threading.Thread(target=camera_service.start)
-    gps_service_thread = threading.Thread(target=gps_service.start)
-    camera_service_thread.start()
-    gps_service_thread.start()
-
+    server = SensorServer()
+    server.start()
     try:
         while True:
             pass
 
     except KeyboardInterrupt:
-        camera_service_thread.join()
-        gps_service_thread.join()
         print('\n Services Cancelled by user. Bye!')
 
 
