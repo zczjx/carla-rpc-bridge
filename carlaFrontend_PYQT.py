@@ -111,11 +111,11 @@ class ImageFlowWidget(QWidget, Ui_Form):
         # layout.addWidget(self.image_label)
         # self.setLayout(layout)
 
-        self.image_receiver = ImageReceiver('192.168.1.6',35650)
+        self.image_receiver = ImageReceiver('localhost',35650)
         self.image_receiver.image_received.connect(self.update_image)
         self.image_receiver.start()
 
-        self.image_receiver_1 = ImageReceiver1('192.168.1.6',23149)
+        self.image_receiver_1 = ImageReceiver1('localhost',23149)
         self.image_receiver_1.image_received.connect(self.update_image_1)
         self.image_receiver_1.start()
 
